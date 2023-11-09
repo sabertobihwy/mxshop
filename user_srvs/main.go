@@ -48,7 +48,6 @@ func Register(consuladdr string, grpcHost string, port int, name string, tags []
 		Address: grpcHost,
 		Check:   check,
 	}
-	zap.S().Infof("====register id is ==== %s", serviceId)
 	err = client.Agent().ServiceRegister(regis)
 	if err != nil {
 		panic(err)

@@ -4,6 +4,7 @@ import (
 	context "context"
 	"crypto/sha512"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 
@@ -63,6 +64,7 @@ func (s *UserServer) GetUserList(ctx context.Context, in *proto.PageInfo) (*prot
 		UserInfoRsp := ModelToRsp(user)
 		rsp.Data = append(rsp.Data, &UserInfoRsp)
 	}
+	zap.S().Infof("userlist")
 	return rsp, nil
 }
 func (s *UserServer) GetUserByMobile(ctx context.Context, req *proto.MobileRequest) (*proto.UserInfoRsp, error) {
