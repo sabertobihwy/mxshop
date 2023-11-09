@@ -2,7 +2,6 @@ name: 'mxshop_srvs'
 host: '192.168.2.178'
 consul:
   host: '192.168.2.112'
-  port: 50051
 mysql:
   host: '192.168.2.112'
   port: 3306

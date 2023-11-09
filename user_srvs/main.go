@@ -4,8 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/hashicorp/consul/api"
+	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -15,9 +19,12 @@ import (
 	"mxshop_srvs/user_srvs/handler"
 	"mxshop_srvs/user_srvs/initialize"
 	"mxshop_srvs/user_srvs/proto"
+	"mxshop_srvs/user_srvs/utils"
 )
 
-func Register(consuladdr string, grpcHost string, port int, name string, tags []string, id string) error {
+var serviceId string
+
+func Register(consuladdr string, grpcHost string, port int, name string, tags []string, id string) (*api.Client, error) {
 	cfg := api.DefaultConfig()
 	cfg.Address = fmt.Sprintf("%s:%d", consuladdr, 8500)
 	client, err := api.NewClient(cfg)
@@ -31,20 +38,22 @@ func Register(consuladdr string, grpcHost string, port int, name string, tags []
 		Interval:                       "5s",
 		DeregisterCriticalServiceAfter: "10s",
 	}
+	serviceId = fmt.Sprintf("%s", uuid.NewV4())
 	// registration instance
 	regis := &api.AgentServiceRegistration{
 		Name:    name,
-		ID:      id,
+		ID:      serviceId,
 		Port:    port,
 		Tags:    tags,
 		Address: grpcHost,
 		Check:   check,
 	}
+	zap.S().Infof("====register id is ==== %s", serviceId)
 	err = client.Agent().ServiceRegister(regis)
 	if err != nil {
 		panic(err)
 	}
-	return err
+	return client, err
 
 }
 
@@ -57,15 +66,18 @@ func main() {
 	initialize.InitDB()
 
 	IP := flag.String("ip", global.ServiceConfig.Host, "ip addr") // default: 0.0.0.0
-	PORT := flag.Int("port", int(global.ServiceConfig.ConsulConfig.Port), "port")
+	PORT := flag.Int("port", 0, "port")
 	flag.Parse()
+	if *PORT == 0 {
+		*PORT, _ = utils.GetFreePort()
+	}
 	fmt.Println("ip:", *IP)
 	fmt.Println("port:", *PORT)
 
 	server := grpc.NewServer()
 	proto.RegisterUserServer(server, &handler.UserServer{}) // grpc-server, implemented server
 	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
-	err := Register(global.ServiceConfig.ConsulConfig.Host, global.ServiceConfig.Host, global.ServiceConfig.ConsulConfig.Port,
+	client, err := Register(global.ServiceConfig.ConsulConfig.Host, global.ServiceConfig.Host, *PORT,
 		global.ServiceConfig.Name, []string{"mxshop", "bobby"}, global.ServiceConfig.Name)
 	if err != nil {
 		zap.S().Debugf(err.Error())
@@ -76,8 +88,17 @@ func main() {
 		zap.S().Debugf(fmt.Sprintf("%s:%d", *IP, *PORT))
 		panic("listen error")
 	}
-	err = server.Serve(lis)
-	if err != nil {
-		panic("fail to start grpc")
+	go func() {
+		err = server.Serve(lis) // block -> turn into goroutine
+		if err != nil {
+			panic("fail to start grpc")
+		}
+	}()
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	if err = client.Agent().ServiceDeregister(serviceId); err != nil {
+		zap.S().Debugf(fmt.Sprintf("deregister error"))
+		panic(err)
 	}
 }
