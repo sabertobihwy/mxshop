@@ -1,10 +1,7 @@
-name: 'mxshop_srvs'
-host: '192.168.2.178'
-consul:
-  host: '192.168.2.112'
-mysql:
-  host: '192.168.2.112'
-  port: 3306
-  username: 'root'
-  password: 'root'
-  db: 'mxshop'
+host: '192.168.2.112'
+port: 8848
+namespace: '09d9e80b-6932-4a58-ad14-4fec10bcef59'
+dataid: 'usr-srvs.json'
+group: 'dev'
+user: 'nacos'
+password: 'nacos'

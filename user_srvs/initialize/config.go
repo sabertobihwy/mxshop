@@ -1,9 +1,15 @@
 package initialize
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
 	"mxshop_srvs/user_srvs/global"
 )
 
@@ -26,8 +32,45 @@ func InitConfig() {
 	if err := v.ReadInConfig(); err != nil {
 		panic(err)
 	}
-	sc := global.ServiceConfig
-	if err := v.Unmarshal(sc); err != nil { // unserilaize to Object
+	nc := global.NacosConfig
+	if err := v.Unmarshal(nc); err != nil { // unserilaize to Object
 		panic(err)
 	}
+
+	//create ServerConfig
+	sc := []constant.ServerConfig{
+		*constant.NewServerConfig(global.NacosConfig.Host, uint64(global.NacosConfig.Port),
+			constant.WithContextPath("/nacos")),
+	}
+
+	//create ClientConfig
+	cc := *constant.NewClientConfig(
+		constant.WithNamespaceId(global.NacosConfig.Namespace),
+		constant.WithTimeoutMs(5000),
+		constant.WithNotLoadCacheAtStart(true),
+		constant.WithLogDir("tmp/nacos/log"),
+		constant.WithCacheDir("tmp/nacos/cache"),
+		constant.WithLogLevel("debug"),
+	)
+
+	// create config client
+	client, err := clients.NewConfigClient(
+		vo.NacosClientParam{
+			ClientConfig:  &cc,
+			ServerConfigs: sc,
+		},
+	)
+	if err != nil {
+		panic(err.Error())
+	}
+	content, err := client.GetConfig(vo.ConfigParam{
+		DataId: global.NacosConfig.Dataid,
+		Group:  global.NacosConfig.Group,
+	})
+	//	fmt.Printf("GetConfig,config : %s", content)
+	err = json.Unmarshal([]byte(content), &global.ServiceConfig)
+	if err != nil {
+		panic(err.Error())
+	}
+
 }

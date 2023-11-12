@@ -19,3 +19,12 @@ type ServiceConfig struct {
 	ConsulConfig ConsulConfig `mapstructure:"consul" json:"consul"`
 	Host         string       `mapstructure:"host" json:"host"`
 }
+type NacosConfig struct {
+	Host      string `mapstructure:"host" json:"host"`
+	Port      int    `mapstructure:"port" json:"port"`
+	Namespace string `mapstructure:"namespace" json:"namespace"`
+	Dataid    string `mapstructure:"dataid" json:"dataid"`
+	Group     string `mapstructure:"group" json:"group"`
+	User      string `mapstructure:"user" json:"user"`
+	Password  string `mapstructure:"password" json:"password"`
+}
