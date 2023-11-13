@@ -64,8 +64,8 @@ func main() {
 	// initialize db
 	initialize.InitDB()
 
-	IP := flag.String("ip", global.ServiceConfig.Host, "ip addr") // default: 0.0.0.0
-	PORT := flag.Int("port", 0, "port")
+	IP := flag.String("ip", "0.0.0.0", "ip addr") // default: 0.0.0.0
+	PORT := flag.Int("port", 50051, "port")
 	flag.Parse()
 	if *PORT == 0 {
 		*PORT, _ = utils.GetFreePort()
@@ -82,6 +82,7 @@ func main() {
 		zap.S().Debugf(err.Error())
 		panic("register error")
 	}
+	fmt.Println("=========" + fmt.Sprintf("%s:%d", *IP, *PORT))
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *PORT))
 	if err != nil {
 		zap.S().Debugf(fmt.Sprintf("%s:%d", *IP, *PORT))

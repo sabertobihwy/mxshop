@@ -6,7 +6,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"gorm.io/gorm/schema"
 	"log"
 	"mxshop_srvs/goods_srvs/global"
 	"os"
@@ -34,8 +33,8 @@ func InitDB() {
 	// NamingStrategy & TableName cannot config concurrently
 	var err error
 	global.DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{TablePrefix: "mxshop_"},
-		Logger:         newLogger,
+		//	NamingStrategy: schema.NamingStrategy{TablePrefix: "mxshop_"},
+		Logger: newLogger,
 	})
 	if err != nil {
 		panic(err)
