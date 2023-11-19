@@ -1,0 +1,7 @@
+host: '192.168.2.112'
+port: 8848
+namespace: '469b5669-3dd7-4f94-8f35-e5d585cb53c1'
+dataid: 'stocks_srvs.json'
+group: 'dev'
+user: 'nacos'
+password: 'nacos'
