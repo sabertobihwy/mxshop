@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "github.com/mbobakov/grpc-consul-resolver"
 	"google.golang.org/grpc"
+	"sync"
 
 	"mxshop_srvs/stocks_srvs/proto"
 )
@@ -35,10 +36,14 @@ func main() {
 	//TestSell()
 	//TestReBack()
 	var i int32
-	for i = 421; i <= 840; i++ {
-		TestSetInv(i, 100)
+	var wg sync.WaitGroup
+	wg.Add(10)
+	defer conn.Close()
+	defer wg.Wait()
+	//defer conn.Close()
+	for i = 0; i < 10; i++ {
+		go TestSell(&wg, 1)
 	}
-	_ = conn.Close()
 }
 
 func TestSetInv(i int32, n int32) {
@@ -61,11 +66,12 @@ func TestInvDetail() {
 	}
 }
 
-func TestSell(i int32, n int32) {
+func TestSell(wg *sync.WaitGroup, n int32) {
+	defer wg.Done()
 	num, err := stocksClient.Sell(context.Background(), &proto.SellInfo{
 		GoodsInvInfo: []*proto.GoodsInvInfo{
 			{
-				GoodsId: i,
+				GoodsId: 421,
 				Num:     n,
 			},
 		},
