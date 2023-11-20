@@ -2,39 +2,44 @@ package main
 
 import (
 	"context"
-	"fmt"
+	_ "github.com/mbobakov/grpc-consul-resolver"
 	"google.golang.org/grpc"
+
 	"mxshop_srvs/stocks_srvs/proto"
 )
 
 var (
-	userClient proto.UserClient
-	conn       *grpc.ClientConn
+	stocksClient proto.StocksClient
+	conn         *grpc.ClientConn
 )
 
 func Init() {
 	var err error
-	conn, err = grpc.Dial(":50051", grpc.WithInsecure())
+	conn, err = grpc.Dial("consul://192.168.2.112:8500/stocks_srvs?wait=14s&tag=mxshop",
+		grpc.WithInsecure(),
+		grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy": "round_robin"}`),
+	)
 	if err != nil {
 		panic("conn error")
 	}
-	userClient = proto.NewUserClient(conn)
+	stocksClient = proto.NewStocksClient(conn)
 
 }
 
 func main() {
 	Init()
-	userListRsp, err := userClient.GetUserList(context.Background(), &proto.PageInfo{
-		Pn:    2,
-		PSize: 5,
+	_, err := stocksClient.SetInv(context.Background(), &proto.GoodsInvInfo{
+		GoodsId: 1,
+		Num:     2,
 	})
 	if err != nil {
 		panic(err)
 	}
-	for _, userInfo := range userListRsp.Data {
-		fmt.Println(userInfo.NickName, userInfo.Mobile, userInfo.PassWord)
-		rsp, _ := userClient.CheckPwd(context.Background(), &proto.PwdCheckInfo{PassWord: "admin123", EncryptedPws: userInfo.PassWord})
-		fmt.Println(rsp.Success)
+	_, err = stocksClient.InvDetail(context.Background(), &proto.GoodsInvInfo{
+		GoodsId: 1,
+	})
+	if err != nil {
+		panic(err)
 	}
 
 	err = conn.Close()

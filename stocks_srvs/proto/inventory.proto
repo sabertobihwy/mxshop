@@ -4,7 +4,7 @@ option go_package = "./;proto";
 
 service Stocks{
   rpc SetInv(GoodsInvInfo) returns (google.protobuf.Empty);
-  rpc InvDetail(GoodsInvInfo) returns (google.protobuf.Empty);
+  rpc InvDetail(GoodsInvInfo) returns (GoodsInvInfo);
   rpc Sell(SellInfo) returns (google.protobuf.Empty);
   rpc Reback(SellInfo) returns (google.protobuf.Empty);
 }
