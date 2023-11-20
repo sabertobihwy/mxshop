@@ -2,7 +2,7 @@ package handler
 
 import (
 	"context"
-	"go.uber.org/zap"
+	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -44,26 +44,32 @@ func (s *StocksServer) Sell(c context.Context, sell *proto.SellInfo) (*emptypb.E
 	tx := global.DB.Begin() // start local transaction
 	for _, g := range sell.GoodsInvInfo {
 		var inv model.Inventory
-		for {
-			if result := global.DB.
-				Where(&model.Inventory{Goods: g.GoodsId}).First(&inv); result.RowsAffected == 0 {
-				tx.Rollback() // rollback
-				return nil, status.Errorf(codes.InvalidArgument, "inventory not found")
-			}
-			if inv.Stocks < g.Num {
-				tx.Rollback() // rollback
-				return nil, status.Errorf(codes.ResourceExhausted, "inventory not enough")
-			}
-			//inv.Stocks -= g.Num // 数据一致要靠分布式锁
-			// upate inventory where goods = inv.goodid, version = inv.version set stocks = inv.Stocks- g.num and version = inv.version+1
-			if result := global.DB.Model(&model.Inventory{}).Select("stocks", "verson").
-				Where("goods = ? and verson = ?", inv.Goods, inv.Verson).
-				Updates(model.Inventory{Stocks: inv.Stocks - g.Num, Verson: inv.Verson + 1}); result.RowsAffected == 0 {
-				zap.S().Info("reducing stocks failed")
-			} else {
-				break
-			}
+		mutex := global.Redsync.NewMutex(fmt.Sprintf("goods_%d", g.GoodsId))
+		if err := mutex.Lock(); err != nil {
+			return nil, status.Errorf(codes.Internal, "redsync lock error")
 		}
+		if result := global.DB.
+			Where(&model.Inventory{Goods: g.GoodsId}).First(&inv); result.RowsAffected == 0 {
+			tx.Rollback() // rollback
+			return nil, status.Errorf(codes.InvalidArgument, "inventory not found")
+		}
+		if inv.Stocks < g.Num {
+			tx.Rollback() // rollback
+			return nil, status.Errorf(codes.ResourceExhausted, "inventory not enough")
+		}
+		inv.Stocks -= g.Num // 数据一致要靠分布式锁
+		tx.Save(&inv)
+		if ok, err := mutex.Unlock(); !ok || err != nil {
+			return nil, status.Errorf(codes.Internal, "redsync unlock error")
+		}
+		// upate inventory where goods = inv.goodid, version = inv.version set stocks = inv.Stocks- g.num and version = inv.version+1
+		//if result := global.DB.Model(&model.Inventory{}).Select("stocks", "verson").
+		//	Where("goods = ? and verson = ?", inv.Goods, inv.Verson).
+		//	Updates(model.Inventory{Stocks: inv.Stocks - g.Num, Verson: inv.Verson + 1}); result.RowsAffected == 0 {
+		//	zap.S().Info("reducing stocks failed")
+		//} else {
+		//	break
+		//}
 
 	}
 	tx.Commit() // commit

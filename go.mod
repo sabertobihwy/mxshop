@@ -4,6 +4,8 @@ go 1.21
 
 require (
 	github.com/anaskhan96/go-password-encoder v0.0.0-20201010210601-c765b799fd72
+	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-redsync/redsync/v4 v4.11.0
 	github.com/goccy/go-json v0.10.2
 	github.com/golang/protobuf v1.5.3
 	github.com/hashicorp/consul/api v1.25.1
@@ -50,6 +52,7 @@ require (
 	github.com/daixiang0/gci v0.10.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/esimonov/ifshort v1.0.4 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect

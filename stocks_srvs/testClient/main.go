@@ -37,12 +37,12 @@ func main() {
 	//TestReBack()
 	var i int32
 	var wg sync.WaitGroup
-	wg.Add(10)
+	wg.Add(5)
 	defer conn.Close()
 	defer wg.Wait()
 	//defer conn.Close()
-	for i = 0; i < 10; i++ {
-		go TestSell(&wg, 1)
+	for i = 0; i < 5; i++ {
+		go TestSell(&wg)
 	}
 }
 
@@ -66,13 +66,21 @@ func TestInvDetail() {
 	}
 }
 
-func TestSell(wg *sync.WaitGroup, n int32) {
+func TestSell(wg *sync.WaitGroup) {
 	defer wg.Done()
 	num, err := stocksClient.Sell(context.Background(), &proto.SellInfo{
 		GoodsInvInfo: []*proto.GoodsInvInfo{
 			{
 				GoodsId: 421,
-				Num:     n,
+				Num:     10,
+			},
+			{
+				GoodsId: 422,
+				Num:     10,
+			},
+			{
+				GoodsId: 423,
+				Num:     10,
 			},
 		},
 	})

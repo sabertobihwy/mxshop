@@ -28,6 +28,7 @@ func main() {
 	initialize.InitConfig()
 	// initialize db
 	initialize.InitDB()
+	initialize.InitializeRedis(global.ServiceConfig.RedisConfig.Host, global.ServiceConfig.RedisConfig.Port)
 
 	IP := flag.String("ip", global.ServiceConfig.Host, "ip addr") // default: 0.0.0.0
 	PORT := flag.Int("port", 50051, "port")

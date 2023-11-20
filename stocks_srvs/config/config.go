@@ -13,10 +13,16 @@ type ConsulConfig struct {
 	Port int    `mapstructure:"port" json:"port"`
 }
 
+type RedisConfig struct {
+	Host string `mapstructure:"host" json:"host"`
+	Port int    `mapstructure:"port" json:"port"`
+}
+
 type ServiceConfig struct {
 	Name         string       `mapstructure:"name" json:"name"`
 	MysqlConfig  MysqlConfig  `mapstructure:"mysql" json:"mysql"`
 	ConsulConfig ConsulConfig `mapstructure:"consul" json:"consul"`
+	RedisConfig  RedisConfig  `mapstructure:"redis" json:"redis"`
 	Host         string       `mapstructure:"host" json:"host"`
 	Tags         []string     `mapstructure:"tags" json:"tags"`
 }
