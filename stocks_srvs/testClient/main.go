@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	_ "github.com/mbobakov/grpc-consul-resolver"
 	"google.golang.org/grpc"
 
@@ -28,22 +29,67 @@ func Init() {
 
 func main() {
 	Init()
-	_, err := stocksClient.SetInv(context.Background(), &proto.GoodsInvInfo{
-		GoodsId: 1,
-		Num:     2,
-	})
-	if err != nil {
-		panic(err)
-	}
-	_, err = stocksClient.InvDetail(context.Background(), &proto.GoodsInvInfo{
-		GoodsId: 1,
-	})
-	if err != nil {
-		panic(err)
-	}
 
-	err = conn.Close()
+	//TestInvDetail()
+	//TestSetInv()
+	//TestSell()
+	//TestReBack()
+	var i int32
+	for i = 421; i <= 840; i++ {
+		TestSetInv(i, 100)
+	}
+	_ = conn.Close()
+}
+
+func TestSetInv(i int32, n int32) {
+	_, err := stocksClient.SetInv(context.Background(), &proto.GoodsInvInfo{
+		GoodsId: i,
+		Num:     n,
+	})
 	if err != nil {
-		return
+		panic(err)
+	}
+}
+
+func TestInvDetail() {
+	num, err := stocksClient.InvDetail(context.Background(), &proto.GoodsInvInfo{
+		GoodsId: 1,
+	})
+	fmt.Println(num)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestSell(i int32, n int32) {
+	num, err := stocksClient.Sell(context.Background(), &proto.SellInfo{
+		GoodsInvInfo: []*proto.GoodsInvInfo{
+			{
+				GoodsId: i,
+				Num:     n,
+			},
+		},
+	})
+	fmt.Println(num)
+	if err != nil {
+		panic(err)
+	}
+}
+func TestReBack() {
+	num, err := stocksClient.Reback(context.Background(), &proto.SellInfo{
+		GoodsInvInfo: []*proto.GoodsInvInfo{
+			{
+				GoodsId: 1,
+				Num:     10,
+			},
+			{
+				GoodsId: 2,
+				Num:     10,
+			},
+		},
+	})
+	fmt.Println(num)
+	if err != nil {
+		panic(err)
 	}
 }

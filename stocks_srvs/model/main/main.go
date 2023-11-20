@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gorm.io/gorm/schema"
 	"log"
 	"mxshop_srvs/stocks_srvs/model"
 	"os"
@@ -26,7 +27,10 @@ func main() {
 	// NamingStrategy & TableName cannot config concurrently
 	var err error
 	DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		//NamingStrategy: schema.NamingStrategy{TablePrefix: "mxshop_"},
+		NamingStrategy: schema.NamingStrategy{
+			//TablePrefix: "mxshop_",
+			SingularTable: true,
+		},
 		Logger: newLogger,
 	})
 	if err != nil {
