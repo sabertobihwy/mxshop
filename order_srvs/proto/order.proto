@@ -8,6 +8,7 @@ service Order {
   rpc CartItemList(UserInfo) returns(CartItemListResponse); //获取用户的购物车信息
   rpc CreateCartItem(CartItemRequest) returns(ShopCartInfoResponse); //添加商品到购物车
   rpc UpdateCartItem(CartItemRequest) returns(google.protobuf.Empty); //修改购物车记录
+  rpc DeleteCartItem(CartItemRequest) returns(google.protobuf.Empty);
 
   //订单
   rpc Create(OrderRequest) returns (OrderInfoResponse); //创建订单
