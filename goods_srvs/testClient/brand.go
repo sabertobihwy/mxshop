@@ -18,3 +18,26 @@ func TestBrand() {
 		fmt.Println(brandsInfo.Name)
 	}
 }
+
+func TestCateBrand() {
+	rsp, err := goodsClient.CategoryBrandList(context.Background(), &proto.CategoryBrandFilterRequest{
+		Pages: 2, PagePerNums: 5,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for _, v := range rsp.Data {
+		fmt.Println(v.Brand)
+	}
+}
+func TestGetCategoryBrandList() {
+	rsp, err := goodsClient.GetCategoryBrandList(context.Background(), &proto.CategoryInfoRequest{
+		Id: 130366,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for _, v := range rsp.Data {
+		fmt.Println(v.Name)
+	}
+}
