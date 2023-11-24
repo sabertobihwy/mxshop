@@ -6,11 +6,12 @@ package model
 // 这些类型我们使用int32还是int
 type Category struct {
 	BaseModel
-	Name             string `gorm:"type:varchar(20);not null"`
-	ParentCategoryID int32
-	ParentCategory   *Category
-	Level            int32 `gorm:"type:int;not null;default:1"`
-	IsTab            bool  `gorm:"default:false;not null"`
+	Name             string      `gorm:"type:varchar(20);not null" json:"name"`
+	ParentCategoryID int32       `json:"parent"`
+	ParentCategory   *Category   `json:"-"`
+	SubCategory      []*Category `gorm:"foreignKey:ParentCategoryID;references:ID" json:"subCategory"`
+	Level            int32       `gorm:"type:int;not null;default:1" json:"level"`
+	IsTab            bool        `gorm:"default:false;not null" json:"is_tab"`
 }
 type Brands struct {
 	BaseModel

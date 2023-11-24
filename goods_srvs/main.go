@@ -3,13 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	uuid "github.com/satori/go.uuid"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
