@@ -17,14 +17,21 @@ type RedisConfig struct {
 	Host string `mapstructure:"host" json:"host"`
 	Port int    `mapstructure:"port" json:"port"`
 }
-
+type GoodService struct {
+	Name string `mapstructure:"name" json:"name"`
+}
+type InventoryService struct {
+	Name string `mapstructure:"name" json:"name"`
+}
 type ServiceConfig struct {
-	Name         string       `mapstructure:"name" json:"name"`
-	MysqlConfig  MysqlConfig  `mapstructure:"mysql" json:"mysql"`
-	ConsulConfig ConsulConfig `mapstructure:"consul" json:"consul"`
-	RedisConfig  RedisConfig  `mapstructure:"redis" json:"redis"`
-	Host         string       `mapstructure:"host" json:"host"`
-	Tags         []string     `mapstructure:"tags" json:"tags"`
+	Name         string           `mapstructure:"name" json:"name"`
+	MysqlConfig  MysqlConfig      `mapstructure:"mysql" json:"mysql"`
+	ConsulConfig ConsulConfig     `mapstructure:"consul" json:"consul"`
+	RedisConfig  RedisConfig      `mapstructure:"redis" json:"redis"`
+	Host         string           `mapstructure:"host" json:"host"`
+	Tags         []string         `mapstructure:"tags" json:"tags"`
+	GoodSrv      GoodService      `mapstructure:"goods_srvs" json:"goods_srvs"`
+	InventorySrv InventoryService `mapstructure:"stocks_srvs" json:"stocks_srvs"`
 }
 type NacosConfig struct {
 	Host      string `mapstructure:"host" json:"host"`

@@ -26,6 +26,8 @@ func main() {
 	initialize.InitilizeLogger()
 	// initialize config
 	initialize.InitConfig()
+	// init srvs
+	initialize.InitSrvCli()
 	// initialize db
 	initialize.InitDB()
 	initialize.InitializeRedis(global.ServiceConfig.RedisConfig.Host, global.ServiceConfig.RedisConfig.Port)
