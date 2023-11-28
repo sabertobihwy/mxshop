@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"gorm.io/gorm/schema"
 	"log"
 	"mxshop_srvs/stocks_srvs/model"
@@ -36,6 +37,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	DB.AutoMigrate(&model.Inventory{})
+	DB.AutoMigrate(&model.InventoryHistory{})
+	DB.Create(&model.InventoryHistory{
+		OrderSn: "mimimi",
+		Status:  1,
+		Details: []model.GoodsInfo{
+			{GoodsId: 1, Num: 2}, {GoodsId: 2, Num: 3}, {GoodsId: 3, Num: 4},
+		},
+	})
+	var inv model.InventoryHistory
+	DB.Where(&model.InventoryHistory{OrderSn: "mimimi"}).Find(&inv)
+	for _, goodsInfo := range inv.Details {
+		fmt.Println(goodsInfo.GoodsId, goodsInfo.Num)
+	}
 
 }

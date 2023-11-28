@@ -24,7 +24,7 @@ type OrderServer struct {
 }
 
 // y m d h m s + user_id+ random 2 digits
-func GenerateOrderSyn(userid int32) string {
+func GenerateOrderSn(userid int32) string {
 	now := time.Now()
 	rand.Seed(uint64(now.UnixNano()))
 	return fmt.Sprintf("%d%d%d%d%d%d%d%d",
@@ -298,7 +298,7 @@ func (*OrderServer) CreateOrder(c context.Context, req *proto.OrderRequest) (*pr
 	}
 	order := model.OrderInfo{
 		User:         req.UserId,
-		OrderSn:      GenerateOrderSyn(req.UserId),
+		OrderSn:      GenerateOrderSn(req.UserId),
 		Address:      req.Address,
 		SignerName:   req.Name,
 		SingerMobile: req.Mobile,
