@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/apache/rocketmq-client-go/v2"
+	"github.com/apache/rocketmq-client-go/v2/consumer"
+	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"net"
 	"os"
 	"os/signal"
@@ -61,9 +64,26 @@ func main() {
 			panic("fail to start grpc")
 		}
 	}()
+	// ordersrv listen to "order_timeout" mq
+	c, _ := rocketmq.NewPushConsumer(
+		consumer.WithGroupName("order"), // sequentially consume message; load balance
+		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.2.112:9876"})),
+	)
+	err = c.Subscribe("order_timeout", consumer.MessageSelector{}, handler.AutoTimeout)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	// Note: start after subscribe
+	err = c.Start()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+	//quit
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	_ = c.Shutdown()
 	if err = client.Agent().ServiceDeregister(consul.ServiceId); err != nil {
 		zap.S().Debugf(fmt.Sprintf("deregister error"))
 		panic(err)

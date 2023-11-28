@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/apache/rocketmq-client-go/v2"
+	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
+	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,7 +17,6 @@ import (
 	"mxshop_srvs/order_srvs/global"
 	"mxshop_srvs/order_srvs/model"
 	"mxshop_srvs/order_srvs/proto"
-	"os"
 	"time"
 )
 
@@ -254,8 +255,36 @@ func (o *OrderListener) ExecuteLocalTransaction(msg *primitive.Message) primitiv
 		o.Detail = "delete from cart fails"
 		return primitive.CommitMessageState
 	}
+	// 6. when we create order; we also need to send "delay msg"
+	p, _ := rocketmq.NewProducer(
+		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.2.112:9876"})),
+		producer.WithRetry(2),
+	)
+	err = p.Start()
+	if err != nil {
+		tx.Rollback()
+		o.Code = codes.Internal
+		o.Detail = "start delay msg fails"
+		return primitive.CommitMessageState
+	}
+	m := primitive.NewMessage("order_timeout", msg.Body)
+	m.WithDelayTimeLevel(5) // 1min
 
+	_, err = p.SendSync(context.Background(), m)
+
+	if err != nil {
+		tx.Rollback()
+		o.Code = codes.Internal
+		o.Detail = "send delay msg fails"
+		return primitive.CommitMessageState
+	}
+	//err = p.Shutdown()
+	//if err != nil {
+	//	fmt.Printf("shutdown producer error: %s", err.Error())
+	//}
+	// commit
 	tx.Commit()
+	o.Code = codes.OK
 	fmt.Printf("执行完毕\n")
 	return primitive.RollbackMessageState
 }
@@ -294,7 +323,7 @@ func (*OrderServer) CreateOrder(c context.Context, req *proto.OrderRequest) (*pr
 	err := p.Start()
 	if err != nil {
 		fmt.Printf("start producer error: %s", err.Error())
-		os.Exit(1)
+		return nil, status.Error(codes.Internal, "start trans producer fails")
 	}
 	order := model.OrderInfo{
 		User:         req.UserId,
@@ -316,6 +345,10 @@ func (*OrderServer) CreateOrder(c context.Context, req *proto.OrderRequest) (*pr
 	if res.State == primitive.CommitMessageState {
 		return nil, status.Error(ol.Code, ol.Detail)
 	}
+	//err = p.Shutdown()
+	//if err != nil {
+	//	fmt.Printf("shutdown producer error: %s", err.Error())
+	//}
 	return &proto.OrderInfoResponse{Id: ol.Id, OrderSn: order.OrderSn, Total: ol.OrderMount}, nil
 }
 func (*OrderServer) UpdateOrderStatus(c context.Context, req *proto.OrderStatus) (*emptypb.Empty, error) {
@@ -323,4 +356,59 @@ func (*OrderServer) UpdateOrderStatus(c context.Context, req *proto.OrderStatus)
 		return nil, status.Errorf(codes.NotFound, "order not exists")
 	}
 	return &emptypb.Empty{}, nil
+}
+
+/*
+ * if order state is not TRADE_SUCCESS -> TRADE_CLOSED
+ * send normal msg reback()
+ */
+func AutoTimeout(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+	var oi model.OrderInfo
+	for _, msg := range msgs {
+		if err := json.Unmarshal(msg.Body, &oi); err != nil {
+			zap.S().Debugf("JSON analysing error")
+			return consumer.ConsumeSuccess, nil
+		}
+		if result := global.DB.Where(&model.OrderInfo{OrderSn: oi.OrderSn}).First(&oi); result.RowsAffected == 0 {
+			return consumer.ConsumeSuccess, nil
+		}
+		if oi.Status != "TRADE_SUCCESS" { // how to achieve idempotence?
+			tx := global.DB.Begin()
+			// 1. update oi.Status
+			oi.Status = "TRADE_CLOSED"
+			if result := tx.Save(&oi); result.RowsAffected == 0 {
+				tx.Rollback()
+				zap.S().Debugf("update orderInfo status error")
+				return consumer.ConsumeRetryLater, nil
+			}
+			// 2. send to "inventory_reback" mq; normal msg
+			p, _ := rocketmq.NewProducer(
+				producer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.2.112:9876"})),
+				producer.WithRetry(2),
+			)
+			err := p.Start()
+			if err != nil {
+				tx.Rollback()
+				zap.S().Debugf("starting mq error")
+				return consumer.ConsumeRetryLater, nil
+			}
+			msg := &primitive.Message{
+				Topic: "inventory_reback",
+				Body:  msg.Body,
+			}
+			_, err = p.SendSync(context.Background(), msg)
+
+			if err != nil {
+				tx.Rollback()
+				zap.S().Debugf("sending reback msg error")
+				return consumer.ConsumeRetryLater, nil
+			}
+			//err = p.Shutdown()
+			//if err != nil {
+			//	fmt.Printf("shutdown producer error: %s", err.Error())
+			//}
+			tx.Commit()
+		}
+	}
+	return consumer.ConsumeSuccess, nil
 }

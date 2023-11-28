@@ -26,8 +26,12 @@ type Inventory struct {
 	Verson int32 `gorm:"type:int;"`
 }
 
-type InventoryHistory struct {
+type InventoryDetail struct {
 	OrderSn string         `gorm:"type:varchar(20);index:idx_order_sn,unique"`
 	Status  int32          `gorm:"type:int;"` // 1. refduced 2. rebacked
 	Details GooodsInfoList `gorm:"type:varchar(200);"`
+}
+
+func (InventoryDetail) TableName() string {
+	return "inventorydetail"
 }

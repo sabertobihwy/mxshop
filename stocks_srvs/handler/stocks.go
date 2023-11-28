@@ -82,7 +82,7 @@ func (s *StocksServer) Sell(c context.Context, sell *proto.SellInfo) (*emptypb.E
 		//}
 
 	}
-	if result := tx.Create(&model.InventoryHistory{
+	if result := tx.Create(&model.InventoryDetail{
 		OrderSn: sell.OrderSn,
 		Status:  1,
 		Details: goodsList,
@@ -124,8 +124,8 @@ func AutoReback(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.Co
 			zap.S().Debugf("JSON analysing error")
 			return consumer.ConsumeSuccess, nil
 		}
-		var inv model.InventoryHistory
-		if result := global.DB.Where(&model.InventoryHistory{OrderSn: oi.OrderSn, Status: 1}).First(&inv); result.RowsAffected == 0 {
+		var inv model.InventoryDetail
+		if result := global.DB.Where(&model.InventoryDetail{OrderSn: oi.OrderSn, Status: 1}).First(&inv); result.RowsAffected == 0 {
 			// already reback
 			return consumer.ConsumeSuccess, nil
 		}
@@ -136,7 +136,7 @@ func AutoReback(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.Co
 				return consumer.ConsumeRetryLater, nil
 			}
 		}
-		if result := tx.Where(&model.InventoryHistory{OrderSn: oi.OrderSn}).Update("status", 2); result.RowsAffected == 0 {
+		if result := tx.Where(&model.InventoryDetail{OrderSn: oi.OrderSn}).Update("status", 2); result.RowsAffected == 0 {
 			tx.Rollback()
 			return consumer.ConsumeRetryLater, nil
 		}
