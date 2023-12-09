@@ -24,7 +24,7 @@ import (
 
 var serviceId string
 
-func Register(consuladdr string, grpcHost string, port int, name string, tags []string, id string) (*api.Client, error) {
+func Register(consuladdr string, grpcHost string, port int, name string, tags []string) (*api.Client, error) {
 	cfg := api.DefaultConfig()
 	cfg.Address = fmt.Sprintf("%s:%d", consuladdr, 8500)
 	client, err := api.NewClient(cfg)
@@ -77,7 +77,7 @@ func main() {
 	proto.RegisterUserServer(server, &handler.UserServer{}) // grpc-server, implemented server
 	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 	client, err := Register(global.ServiceConfig.ConsulConfig.Host, global.ServiceConfig.Host, *PORT,
-		global.ServiceConfig.Name, []string{"mxshop", "bobby"}, global.ServiceConfig.Name)
+		global.ServiceConfig.Name, []string{"mxshop", "bobby"})
 	if err != nil {
 		zap.S().Debugf(err.Error())
 		panic("register error")

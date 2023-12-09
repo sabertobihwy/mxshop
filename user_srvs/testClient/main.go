@@ -14,7 +14,7 @@ var (
 
 func Init() {
 	var err error
-	conn, err = grpc.Dial(":50051", grpc.WithInsecure())
+	conn, err = grpc.Dial(":50052", grpc.WithInsecure())
 	if err != nil {
 		panic("conn error")
 	}
